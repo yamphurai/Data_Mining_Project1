@@ -1,0 +1,50 @@
+---
+title: "Data Mining Project 1"
+author: "Project Group 10"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  pdf_document: default
+---
+# 2.	Data Exploration
+
+## TX COVID Cases
+
+```{r}
+library("tidyverse")
+library("ggplot2")
+library("ggrepel")
+library("ggcorrplot")
+library("DT")
+```
+### Data Collection
+
+Loading the TX COVID Cases to a data frame
+
+```{r}
+tx_covid_cases <-
+read.csv("C:\\Users\\nilee\\Documents\\AbhilashStudy\\DataMining\\COVID-19\\COVID-19_cases_TX.csv",header =
+TRUE)
+options(max.print=10)
+```
+### Data Cleaning
+
+Removing the records which are Un-allocated to a county as these may not have a value while performing a county level analysis
+```{r}
+
+tx_covid_cases <- subset(tx_covid_cases,county_name !='Statewide Unallocated') 
+tx_covid_cases
+```
+
+
+```{r}
+ggplot(subset(tx_covid_cases,county_fips_code<48004) , aes(x=county_name, y=confirmed_cases)) + 
+geom_bar(stat="identity",width=0.5) +
+theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), 
+                                "inches")) +
+
+coord_flip()
+
+```
+
+
