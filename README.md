@@ -17,3 +17,8 @@ Business Understanding (10 Points)
 
 Data Understanding (45 Points)
 - What data is available? Describe the type of data (scale, values, etc.) of the most important variables in the data. (9 Points)
+- erify data quality: Are there missing values? Duplicate Data? Outliers? Are those mistakes? How can these be fixed? (9 Points)
+- Give simple appropriate statistics (range, mode, mean, median, variance, etc.) for the most important variables in these files and describe what they mean or if you find
+something interesting. (9 points)
+- Visualize the most important attributes appropriately. Provide an interpretation for each graph. Explain for each attribute type why you chose the visualization. (9 points)
+- Explore relationships between attributes: Look at the attributes and then use cross-tabulation, correlation, group-wise averages, and box plots, etc. as appropriate. (9 points)
