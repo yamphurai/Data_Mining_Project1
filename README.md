@@ -31,3 +31,8 @@ shows the data (values) for the first 10 rows for all the features you have sele
   - What resources does a county have (money, hospital)?
   - What is the social distancing response and how long did it take after the first case?
 - Visualize the created attributes. (15 points)
+
+Exceptional Work (10 Points)
+- Developing special preprocessing and explaining your approach/method in detail with examples   "OR"
+- Using an additional data set beyond the three provided. You must analyze the additional data set in the same way you analyzed all the three data sets
+provided. This means that you must apply the steps provided in Data Understanding to the additional data set.
