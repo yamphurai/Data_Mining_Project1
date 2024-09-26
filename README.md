@@ -1,4 +1,4 @@
-<u> Rubric <u>
+<u>Rubric<u>
 - Please submit your report in PDF format. Submit code in an additional file containing sufficient
 comments to make it understandable.
 - Analyze all of the three data sets that have been provided to you in the
