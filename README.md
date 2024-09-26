@@ -22,3 +22,12 @@ Data Understanding (45 Points)
 something interesting. (9 points)
 - Visualize the most important attributes appropriately. Provide an interpretation for each graph. Explain for each attribute type why you chose the visualization. (9 points)
 - Explore relationships between attributes: Look at the attributes and then use cross-tabulation, correlation, group-wise averages, and box plots, etc. as appropriate. (9 points)
+
+Data Preparation (45 Points)
+- Create a data set with objects as rows and features as columns. Use as objects counties in the US. The data set must be included in your report. Provide a table in word that
+shows the data (values) for the first 10 rows for all the features you have selected and/or created. Interesting additional features may be for example: (30 points)
+  - When was the first case reported?
+  - How (densely) populated is the county?
+  - What resources does a county have (money, hospital)?
+  - What is the social distancing response and how long did it take after the first case?
+- Visualize the created attributes. (15 points)
