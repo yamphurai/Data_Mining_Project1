@@ -1,0 +1,304 @@
+---
+title: "Data Mining Project 1"
+author: "Project Group 10 - Abhilash Narayanan"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+
+```{r}
+library("tidyverse")
+library("ggplot2")
+library("ggrepel")
+library("ggcorrplot")
+library("DT")
+```
+# 1. Data Collection and Cleaning
+
+Three datasets are considered for this analysis
+
+1. Dataset 1 : COVID-19_cases_TX.csv
+2. Dataset 2 : COVID-19_cases_plus_census.csv
+    ( Cleansing of this is done in a R code uploaded separately)
+3. Dataset 4 : COVID-19_Vaccinations  
+
+```{r}
+tx_covid_cases <-
+read.csv("C:\\Users\\nilee\\Documents\\AbhilashStudy\\DataMining\\COVID-19\\COVID-19_cases_TX.csv",header =
+TRUE)
+options(max.print=10)
+
+county_census <-
+read.csv("C:\\Users\\nilee\\Documents\\AbhilashStudy\\DataMining\\COVID-19\\COVID-19_cases_plus_census.csv",header =
+TRUE)
+options(max.print=10)
+
+county_vaccination <-
+read.csv("C:\\Users\\nilee\\Documents\\AbhilashStudy\\DataMining\\COVID-19\\COVID-19_Vaccinations_in_the_United_States_County.csv",header =
+TRUE)
+options(max.print=10)
+
+```
+
+Changing the options to print only 10 records while printing
+Printing summary of COVID dataset
+
+```{r}
+options(max.print=10)
+summary(tx_covid_cases)
+```
+Printing the Summary of the Vaccination Dataset
+
+```{r}
+summary(county_vaccination)
+```
+
+## Data Cleaning Dataset 1
+
+Below are the cleaning activities performed for this dataset:-
+Removing the records which are Un-allocated to a county as these may not have a value while performing a county level analysis
+Correcting the data types of the data columns
+
+```{r}
+
+tx_covid_cases
+
+tx_covid_cases <- subset(tx_covid_cases,county_name !='Statewide Unallocated') 
+tx_covid_cases$date <- as.Date(tx_covid_cases$date,format = "%m/%d/%Y")
+options(max.print=10)
+tx_covid_cases
+```
+
+## Data Cleaning Dataset 4
+
+Correcting the data type of the "Date" feature
+Changing the data type of all numeric fields by removing commas
+
+```{r}
+county_vaccination$Date <- as.Date(county_vaccination$Date,format = "%m/%d/%Y")
+county_vaccination$Administered_Dose1_Recip <- as.numeric(gsub(",","",county_vaccination$Administered_Dose1_Recip,fixed=TRUE))
+county_vaccination$Series_Complete_Yes <- as.numeric(gsub(",","",county_vaccination$Series_Complete_Yes,fixed=TRUE))
+county_vaccination$Booster_Doses <- as.numeric(gsub(",","",county_vaccination$Booster_Doses,fixed=TRUE))
+county_vaccination$Census2019 <- as.numeric(gsub(",","",county_vaccination$Census2019,fixed=TRUE))
+options(max.print=10)
+county_vaccination
+```
+
+
+Summary of the COVID cases and Death by County
+
+```{r}
+tx_covid_cases_county = subset(tx_covid_cases, date == '2021-01-25') %>% group_by(county_name)  %>%
+                    summarise(total_confirmed_cases = sum(confirmed_cases), 
+                              total_deaths = sum(deaths), 
+                              .groups = 'drop')
+tx_covid_cases_county$death_perc=tx_covid_cases_county$total_deaths*100/tx_covid_cases_county$total_confirmed_cases 
+tx_covid_cases_county <- tx_covid_cases_county[order(tx_covid_cases_county$death_perc,
+                                decreasing = TRUE), ]
+tx_covid_cases_county
+
+```
+
+
+# 2. Data Analysis
+
+## CoVID Data Set
+
+```{r}
+ggplot(head(tx_covid_cases_county,10),
+           aes(x=county_name, y=death_perc,fill=county_name)) + 
+  geom_bar(stat="identity",width=0.5) +
+  ggtitle("Counties in TX \n Highest Death Percentage \n w.r.t confirmed cases")+
+  coord_flip()
+head
+
+```
+```{r}
+ggplot(tail(tx_covid_cases_county,10),
+           aes(x=county_name, y=death_perc,fill=county_name)) + 
+  geom_bar(stat="identity",width=0.5) +
+  ggtitle(" 10 Counties in TX \n (Lowest Death Percentage w.r.t confirmed cases)")+
+  coord_flip()
+head
+```
+Creating the County dataset from Map for Tx state
+This will be joined with the Cases dataset to plot the same in the graph
+
+```{r}
+counties <- as_tibble(map_data("county"))
+counties_TX <- counties %>% dplyr::filter(region == "texas") %>% rename(c(county = subregion))
+
+tx_covid_cases_county <- tx_covid_cases_county %>% mutate(county = county_name %>% str_to_lower() %>% 
+    str_replace('\\s+county\\s*$', ''))
+
+counties_w_map<-merge(x = counties_TX, y = tx_covid_cases_county, by = "county")
+
+
+ggplot(counties_w_map, aes(long, lat, label = county)) + 
+  geom_polygon(aes(group = group, fill = death_perc)) +
+  scale_fill_gradient(low="green", high="red") +
+  coord_quickmap() +
+  labs(title = "Death Percentage per County")
+```
+
+
+### Filtering only TX Counties for Census data
+
+```{r}
+county_census <- subset(county_census,state == 'TX')
+county_census <- county_census %>% mutate(county = county_name %>% str_to_lower() %>% 
+    str_replace('\\s+county\\s*$', ''))
+```
+
+### Joining the Covid data with the Census data
+
+```{r}
+covid_cases_w_census<-merge(x = county_census, y = tx_covid_cases_county, by = "county")
+```
+
+### Is there a relation between median income and death percentage of a county?
+
+```{r}
+ggplot(covid_cases_w_census, mapping = aes(x= median_income, y = death_perc, label = county_name.x)) + 
+  geom_smooth(method = lm) +
+  geom_point(mapping = aes(size = total_confirmed_cases), color = "blue") + 
+  geom_text_repel(data = subset(covid_cases_w_census, death_perc > quantile(death_perc, .95))) +
+  labs(x = "Median Income", y = "Death Percentage", size = "Confirmed Cases")
+```
+```{r}
+ggplot(covid_cases_w_census, mapping = aes(x= total_pop, y = median_income, label = county_name.x)) + 
+  geom_smooth(method = lm) +
+  geom_point(mapping = aes(size = death_perc), color = "violet") + 
+  geom_text_repel(data = subset(covid_cases_w_census, death_perc > quantile(death_perc, .95))) +
+  labs(x = "Median Income", y = "Total Population", size = "Death Percentage")
+```
+Total Population do not have much effect on teh death percentage compared to the median income. 
+If the MEdian Income of a county is lower , irrespective of the total population , these counties seem to have a higher death percentage
+
+
+### Did we flatten the curve? 
+
+Logic to add total confirmed cases - previous day total confirmed cases
+
+```{r}
+
+tx_covid_cases_date = tx_covid_cases %>% group_by(date) %>%
+summarise(total_confirmed_cases = sum(confirmed_cases),
+total_deaths = sum(deaths),
+.groups = 'drop')
+tx_covid_cases_date <- mutate(tx_covid_cases_date, prev_day_case=lag(total_confirmed_cases, order_by = date))
+tx_covid_cases_date$daily_increase<- tx_covid_cases_date$total_confirmed_cases-tx_covid_cases_date$prev_day_case
+tx_covid_cases_date
+
+```
+
+Plotting that in a line graph
+
+```{r}
+ggplot(tx_covid_cases_date, aes(x = date, y = daily_increase)) + 
+  geom_line() + 
+  geom_smooth() +
+  labs(y = "New Cases per Day")
+```
+  
+### Finding Corelated features  
+
+```{r}
+cor_cases=cor(select(covid_cases_w_census,confirmed_cases,total_pop,percent_income_spent_on_rent, confirmed_cases,commute_45_59_mins,income_less_10000,commuters_by_public_transportation,income_per_capita,death_perc))
+ggcorrplot(cor_cases,insig = "blank", hc.order = TRUE)
+```
+## Dataset 4: COVID Vaccination Report
+
+Pivoting the data to display multiple line graphs
+
+```{r}
+
+county_vacc_date = county_vaccination %>% group_by(Date) %>%
+summarise(tot_dose1 = sum(Administered_Dose1_Recip),
+        tot_series_complete = sum(Series_Complete_Yes),
+        tot_booster = sum(Booster_Doses),
+.groups = 'drop')
+
+county_vacc_date_pivot <- county_vacc_date %>%
+  select(Date, tot_dose1, tot_series_complete,tot_booster) %>%
+  gather(key = "vaccination_type", value = "value", -Date)
+county_vacc_date_pivot
+```
+
+Plotting the pivoted data set to a line graph
+
+```{r}
+
+ggplot(county_vacc_date_pivot, aes(x = Date, y = value)) + 
+  geom_line(aes(color = vaccination_type, line_type = 1)) + 
+  scale_color_manual(values = c("darkred", "darkgreen","blue")) +
+  labs(y = "CoVID Vaccinations", x="Date", title="COVID Vaccination Counts")+
+  coord_flip()
+  
+
+```
+### Calculating the Booster Doses /1000
+
+```{r}
+tx_covid_vacc_county <- county_vaccination %>% mutate(county = Recip_County %>% str_to_lower() %>% 
+    str_replace('\\s+county\\s*$', ''))
+
+tx_covid_vacc_county = subset(tx_covid_vacc_county, Date == '2023-05-10') 
+
+tx_covid_vacc_county$Booster_per_1000 = (tx_covid_vacc_county$Booster_Doses*1000)/ tx_covid_vacc_county$Census2019
+
+vacc_w_map<-merge(x = counties_TX, y = tx_covid_vacc_county, by = "county")
+
+vacc_w_map$Booster_per_1000 = vacc_w_map$Booster_Doses*1000/vacc_w_map$Census2019
+
+vacc_w_map
+
+```
+
+### Plotting the Booster_per_1000 doses on a map
+
+```{r}
+ggplot(vacc_w_map, aes(long, lat, label = county)) + 
+  geom_polygon(aes(group = group, fill = Booster_per_1000)) +
+  scale_fill_gradient(low="lightgreen", high="darkgreen") +
+  coord_quickmap() +
+  labs(title = "Booster Doses per 1000")
+```
+### Merging this with the Census data
+
+```{r}
+covid_vacc_w_census<-merge(x = county_census, y = tx_covid_vacc_county, by = "county")
+```
+
+### Is there a relation for Booster vaccines and Median Income?
+
+```{r}
+ggplot(covid_vacc_w_census, mapping = aes(x= income_per_capita, y = Booster_per_1000, label = county)) + 
+  geom_smooth(method = lm) +
+  geom_point(mapping = aes(size = total_pop), color = "lightgreen") + 
+  geom_text_repel(data = subset(covid_vacc_w_census, Booster_per_1000 > quantile(Booster_per_1000, .95))) +
+  labs(x = "Income per capita", y = "Booster_per_1000", size = "Total Population")
+```
+It seems like the Booster vaccine shots do not have 
+direct co-relation between Income and total population 
+
+
+```{r}
+covid_vacc_w_cases<-merge(x = tx_covid_cases_county, y = tx_covid_vacc_county, by = "county")
+```
+
+### Can we establish any relationship with Booster shots and COVID cases?
+
+```{r}
+ggplot(covid_vacc_w_cases, mapping = aes(x= Booster_per_1000, y = death_perc, label = county)) + 
+  geom_smooth(method = lm) +
+  geom_point(mapping = aes(size = total_deaths), color = "lightgreen") + 
+  geom_text_repel(data = subset(covid_vacc_w_cases, death_perc > quantile(death_perc, .95))) +
+  labs(x = "Booster_per_1000", y = "Death Percentage", size = "Total Population")
+```
+
+
+
